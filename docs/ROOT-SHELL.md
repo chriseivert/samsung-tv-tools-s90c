@@ -11,12 +11,34 @@ that later drops back to the Docker host.
 
 Launch the reverse shell in a new session and let the bounded command return.
 
+## Install the helper command
+
+The repository includes `tools/tv-shell`, which wraps the detached callback.
+Install it once on the controller:
+
+```sh
+curl -fsSL \
+  https://raw.githubusercontent.com/chriseivert/samsung-tv-tools-s90c/main/tools/tv-shell \
+  -o /tmp/tv-shell
+sudo install -m 0755 /tmp/tv-shell /usr/local/bin/tv-shell
+```
+
+Its defaults match the tested network. Override them when needed with
+`TV_HOST`, `TV_CALLBACK_HOST`, `TV_SHELL_PORT`, or
+`SAMSUNG_TV_TOOLS_DIR`.
+
 ## Listener
 
 On the trusted Linux controller:
 
 ```sh
 nc -lvnp 4444
+```
+
+Then, in a second terminal, run:
+
+```sh
+sudo tv-shell
 ```
 
 Port 4444 is only an example. The listener is unauthenticated; expose it only on
