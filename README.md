@@ -40,7 +40,9 @@ unmodified upstream controller test.
 | LCD local-dimming controls | Not applicable to S90C OLED as backlight-zone control |
 | Ad-package suppression | In test — three packages identified; targeted-ad service termination triggered immediate autorestart; deactivation pending |\n| App cleanup / restoration prevention | In test — metadata inspected; no uninstall performed |
 
-See [manual evidence](docs/FINDINGS.md) for exact observations and limitations.\nThe [advertising-package experiment](docs/AD-REMOVAL.md) records the supported\ninspection, deactivate, verification and rollback commands.
+See [manual evidence](docs/FINDINGS.md) for exact observations and limitations.
+The [advertising-package experiment](docs/AD-REMOVAL.md) records the supported
+inspection, deactivate, verification and rollback commands.\nThe [advertising-package experiment](docs/AD-REMOVAL.md) records the supported\ninspection, deactivate, verification and rollback commands.
 
 ## Unattended verifier
 
