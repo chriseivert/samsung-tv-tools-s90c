@@ -2,8 +2,9 @@
 
 Owner: chriseivert. Observed October 26, 2026. All observations are restricted to
 `T-PTMCAKUC-0090-REL-202603190200`. No claim of general S90C compatibility.
-No application removals, package database edits, UEP patches, or update-service
-changes were performed in the documented session.
+No application removals, direct package-database edits, UEP patches, or
+update-service changes were performed in the documented sessions. A targeted-ad
+process was terminated and later package-disabled through supported Tizen tools.
 
 ## Root and interactive shell
 
@@ -108,6 +109,31 @@ For `org.tizen.was-appsync`:
 No rows in the dependency table do not rule out runtime callers. No running
 process at one instant does not establish that it never launches. The owner
 account was `owner:5001:100`. No guard change or restoration test was attempted.
+
+### Advertising packages
+
+The following packages were installed on October 27, 2026:
+
+| Package | Type | Version | Removable | On boot | Autorestart |
+|---|---|---:|---|---|---|
+| `adplatform` | WGT | 0.11.1 | true | false | false |
+| `com.samsung.tv.ad-web-framework` | TPK | 1.1.0324 | true | false | false |
+| `com.samsung.tv.targeted-ad-service` | TPK | 0.0.44 | true | true | true |
+
+`com.samsung.tv.targeted-ad-service` was running as the owner user. A supported
+`app_launcher --terminate` operation exited successfully, but Tizen relaunched
+the service within five seconds with a new PID.
+
+A subsequent supported global `pkgcmd --deactivate` operation completed
+successfully. The files remained installed, the process stayed absent,
+`package_app_info.app_disable` remained `false`, and
+`package_info.package_disable` became `true`. No per-user override row was
+returned. After Smart Hub was left and reopened, **Top Picks For You remained
+visible**. Reboot persistence and unrelated side effects remain unverified.
+No package was uninstalled.
+
+See [Advertising-package experiment](AD-REMOVAL.md) for commands, backup,
+verification, rollback and safety boundaries.
 
 ## Update state
 
