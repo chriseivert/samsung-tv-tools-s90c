@@ -172,15 +172,35 @@ Reactivate it with:
 pkgcmd -A -t wgt -n adplatform --global
 ```
 
+## Combined state and reboot result
+
+All three packages were then disabled together with their supported global
+package-deactivation operations:
+
+```sh
+pkgcmd -D -t wgt -n adplatform --global
+pkgcmd -D -t tpk -n com.samsung.tv.targeted-ad-service --global
+pkgcmd -D -t tpk -n com.samsung.tv.ad-web-framework --global
+```
+
+Readback showed `package_info.package_disable=true` for all three. After a hard
+TV reboot, they remained disabled and no functional errors were observed in the
+owner's initial check. **Top Picks For You remained visible and unchanged.**
+
+This rules out these three packages, individually and together, as the sole
+owner of the recommendation rail on this exact build. They remain disabled by
+owner choice. Longer-term application compatibility and restoration by a future
+app or firmware update remain unverified.
+
 ## Rollback
 
-Reactivate the targeted-ad package with the supported package-manager operation:
+Reactivate the packages with the supported package-manager operations:
 
 ```sh
 tv '
-pkgcmd -A -t tpk \
-    -n com.samsung.tv.targeted-ad-service \
-    --global
+pkgcmd -A -t wgt -n adplatform --global
+pkgcmd -A -t tpk -n com.samsung.tv.targeted-ad-service --global
+pkgcmd -A -t tpk -n com.samsung.tv.ad-web-framework --global
 
 sleep 5
 app_launcher --is-running \
