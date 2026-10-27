@@ -38,7 +38,7 @@ unmodified upstream controller test.
 | Volume / display / events / HDMI policies | Not yet functionally tested |
 | HDMI analysis capture / overlays | Not yet tested; distinct from compositor screenshots |
 | LCD local-dimming controls | Not applicable to S90C OLED as backlight-zone control |
-| Ad-package suppression | In test — three packages identified; targeted-ad service termination triggered immediate autorestart; deactivation pending |\n| App cleanup / restoration prevention | In test — metadata inspected; no uninstall performed |
+| Ad-package suppression | Three known ad packages disabled across hard reboot; rail unchanged; retained disabled by owner |
 
 See [manual evidence](docs/FINDINGS.md) for exact observations and limitations.
 The [persistent reverse-shell guide](docs/ROOT-SHELL.md) records the detached
