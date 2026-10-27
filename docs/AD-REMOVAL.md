@@ -192,6 +192,29 @@ owner of the recommendation rail on this exact build. They remain disabled by
 owner choice. Longer-term application compatibility and restoration by a future
 app or firmware update remain unverified.
 
+## Home-stack capture
+
+A post-reboot capture identified the active Smart Hub components:
+
+- `com.samsung.tv.home.sidebar`
+- `com.samsung.tv.home.media`
+- `com.samsung.tv.contentservicemanager`
+- `com.samsung.tv.content-tiles-provider`
+- `com.samsung.tv.preview-updater`
+- `com.samsung.tv.waapp-contents-provider`
+- `com.samsung.tv.csfs`
+
+The high-CPU Cobalt process was identified by `app_launcher --status` as
+`com.samsung.tv.cobalt-yt` (YouTube), not the Home renderer. Cobalt is shared,
+non-removable system infrastructure and was not disabled.
+
+The process-map capture showed
+`/opt/usr/apps/com.samsung.tv.coba.edenview/shared/res/ResourceEdenView.dll`
+loaded into the running `com.samsung.tv.csfs` process. The Edenview package is
+preloaded and removable. This makes it a stronger renderer/view candidate than
+the previously tested advertising packages, but disabling it may affect Smart
+Hub Home and requires a reboot to unload the mapped resource.
+
 ## Content Tiles provider test
 
 The running app `com.samsung.tv.content-tiles-provider` is a removable,
