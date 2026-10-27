@@ -14,7 +14,7 @@ This repository does not supply a new root exploit or establish compatibility fo
 | Build | `T-PTMCAKUC-0090-REL-202603190200` |
 | Kernel | Linux 5.4.77, ARMv7 (`armv7l`) |
 | Kernel build date | January 5, 2026 |
-| Test date | October 26, 2026 |
+| Test dates | October 26–27, 2026 |
 | Root route | `samsung-tv-tools` direct-SDB archive-launcher wrapper |
 | Tested tools revision | Not captured in the original manual session |
 
@@ -38,13 +38,17 @@ unmodified upstream controller test.
 | Volume / display / events / HDMI policies | Not yet functionally tested |
 | HDMI analysis capture / overlays | Not yet tested; distinct from compositor screenshots |
 | LCD local-dimming controls | Not applicable to S90C OLED as backlight-zone control |
-| Ad-package suppression | Three ad packages remain disabled; rail unchanged. Content Tiles ineffective. Edenview is critical—do not disable |
+| Ad-package suppression | Three ad packages remain disabled; they did not remove the rail. Content Tiles ineffective. Edenview is critical—do not disable |
+| Smart Hub For You cleanup | Verified: cache allowlist retained selected apps and Continue Playing while removing 27 server-defined rows |
 
 See [manual evidence](docs/FINDINGS.md) for exact observations and limitations.
 The [persistent reverse-shell guide](docs/ROOT-SHELL.md) records the detached
 `setsid -f` callback that survives the bounded command runner. The
-[advertising-package experiment](docs/AD-REMOVAL.md) records the supported
-inspection, deactivate, verification and rollback commands.\nThe [advertising-package experiment](docs/AD-REMOVAL.md) records the supported\ninspection, deactivate, verification and rollback commands.
+[advertising-package experiment](docs/AD-REMOVAL.md) records package tests that
+did not remove the recommendation rail. The
+[verified Smart Hub Home cleanup](docs/HOME-CLEANUP.md) documents the rotating
+CoBA cache format, observed row inventory, apps-and-Continue-Playing allowlist,
+verification, and rollback.
 
 ## Unattended verifier
 
@@ -93,7 +97,8 @@ paths and process arguments.
 3. Verify source transitions and selected HDMI input while physically present.
 4. Test speaker changes, display off/wake and physical remote events individually.
 5. Investigate managed API helpers for source listing, display and HDMI policies.
-6. Develop exact-build cleanup support with baseline/readback and recovery evidence.
+6. Verify the Home cache allowlist across a hard reboot and Terra refresh interval.
+7. Turn the verified cache procedure into a guarded helper with automatic rollback.
 
 Keep the working archive-root path. QN90B/QN90F kernel offsets and exploit profiles
 are not evidence of compatibility with this S90C build.
