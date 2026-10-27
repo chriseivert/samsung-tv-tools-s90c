@@ -179,9 +179,11 @@ reactivation before further isolation tests.
 
 A process/application capture identified the active Home stack and showed
 `ResourceEdenView.dll` from `com.samsung.tv.coba.edenview` mapped inside the
-running `com.samsung.tv.csfs` process. The high-CPU Cobalt process was
-`com.samsung.tv.cobalt-yt` (YouTube), not Home. See
-[Advertising-package experiment](AD-REMOVAL.md).
+running `com.samsung.tv.csfs` process. A subsequent deactivation plus hard
+reboot broke the graphical interface. Reactivating Edenview restored it.
+**Edenview is a critical dependency and must not be disabled or removed.**
+The high-CPU Cobalt process was `com.samsung.tv.cobalt-yt` (YouTube), not
+Home. See [Advertising-package experiment](AD-REMOVAL.md).
 
 ## Remaining evidence
 
