@@ -162,6 +162,27 @@ downloaded-update state and persistence after restart have not been verified.
 Disabled enablement does not mean inactive runtime state. No service was stopped
 or disabled during this investigation.
 
+## Smart Hub recommendation investigation
+
+The three known advertising packages—`adplatform`,
+`com.samsung.tv.targeted-ad-service`, and
+`com.samsung.tv.ad-web-framework`—were disabled individually and together.
+All three remained disabled across a hard reboot without an observed functional
+error, but **Top Picks For You** remained visible. They remain disabled by owner
+choice.
+
+The removable, autorestarting
+`com.samsung.tv.content-tiles-provider` app was then disabled independently
+while its parent `com.samsung.tv.contentservicemanager` package remained
+enabled and running. The rail remained visible; the provider was selected for
+reactivation before further isolation tests.
+
+A process/application capture identified the active Home stack and showed
+`ResourceEdenView.dll` from `com.samsung.tv.coba.edenview` mapped inside the
+running `com.samsung.tv.csfs` process. The high-CPU Cobalt process was
+`com.samsung.tv.cobalt-yt` (YouTube), not Home. See
+[Advertising-package experiment](AD-REMOVAL.md).
+
 ## Remaining evidence
 
 - Exact full model designation, size, regional variant and tools checkout commit.
