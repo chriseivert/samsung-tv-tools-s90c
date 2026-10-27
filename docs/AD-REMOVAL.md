@@ -215,6 +215,26 @@ preloaded and removable. This makes it a stronger renderer/view candidate than
 the previously tested advertising packages, but disabling it may affect Smart
 Hub Home and requires a reboot to unload the mapped resource.
 
+## Edenview test — do not disable
+
+`com.samsung.tv.coba.edenview` was disabled with the supported global package
+operation and the TV was hard-rebooted. On the next boot, the graphical
+interface was broken. The owner reactivated the package and restored the GUI.
+
+**Do not disable, uninstall, or include
+`com.samsung.tv.coba.edenview` in a cleanup profile.** Its mapped
+`ResourceEdenView.dll` is a critical Smart Hub/CSFS GUI dependency, not an
+optional recommendation-only component.
+
+Emergency recovery command:
+
+```sh
+pkgcmd -A -t tpk -n com.samsung.tv.coba.edenview --global
+```
+
+A reboot may be required after recovery because the resource is loaded into the
+CSFS process.
+
 ## Content Tiles provider test
 
 The running app `com.samsung.tv.content-tiles-provider` is a removable,
