@@ -192,9 +192,31 @@ owner of the recommendation rail on this exact build. They remain disabled by
 owner choice. Longer-term application compatibility and restoration by a future
 app or firmware update remain unverified.
 
+## Content Tiles provider test
+
+The running app `com.samsung.tv.content-tiles-provider` is a removable,
+autorestarting component inside the still-enabled
+`com.samsung.tv.contentservicemanager` package. It was disabled at app scope:
+
+```sh
+pkgcmd -D -t app -n com.samsung.tv.content-tiles-provider --global
+```
+
+The operation completed successfully. Readback showed
+`package_app_info.app_disable=true` for the provider while the parent package
+remained `package_disable=false`; the provider process was absent and the
+Content Service Manager process remained running. **Top Picks For You still
+remained visible.** This rules out the provider as the sole owner of the rail.
+
+Rollback:
+
+```sh
+pkgcmd -A -t app -n com.samsung.tv.content-tiles-provider --global
+```
+
 ## Rollback
 
-Reactivate the packages with the supported package-manager operations:
+Reactivate the advertising packages with the supported package-manager operations:
 
 ```sh
 tv '
