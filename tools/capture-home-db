@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Capture Samsung Home database schemas and selected Edenview assemblies.
+set -euo pipefail
+
+if [ "${EUID:-$(id -u)}" -ne 0 ]; then
+  exec sudo -E "$0" "$@"
+fi
+
+repo=${SAMSUNG_TV_TOOLS_DIR:-/home/cseivert/samsung-tv-tools}
+tv_host=${TV_HOST:-172.16.40.13}
+output_parent=${S90C_RESEARCH_DIR:-/home/cseivert/s90c-research}
+output_owner=${SUDO_USER:-cseivert}
+
+if [ ! -d "$repo" ]; then
+  printf 'capture-home-db: repository not found: %s\n' "$repo" >&2
+  exit 2
+fi
+
+cd "$repo"
+export TV_HOST="$tv_host"
+umask 077
+
+capture_dir="$output_parent/home-db-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$capture_dir/resources"
+
+tv() {
+  nix --extra-experimental-features 'nix-command flakes' \
+    run .#tv-access -- "$@"
+}
+
+printf '[1/4] Capturing database schemas...\n'
+tv '
+for DB in \
+ /opt/usr/home/owner/apps_rw/com.samsung.tv.contentservicemanager/data/.preview.db \
+ /opt/usr/home/owner/apps_rw/com.samsung.tv.contentservicemanager/data/.preview.db.sqlite \
+ /opt/usr/home/owner/apps_rw/com.samsung.tv.home.media/data/coba.db \
+ /opt/usr/home/owner/apps_rw/com.samsung.tv.home.media/shared/trusted/sqlite.db \
+ /opt/usr/home/owner/apps_rw/com.samsung.tv.home.sidebar/data/coba.db \
+ /opt/usr/home/owner/apps_rw/com.samsung.tv.home.sidebar/shared/trusted/sqlite.db
+do
+  printf "\n=== %s ===\n" "$DB"
+  ls -ln "$DB" 2>&1 || continue
+  printf "%s\n" "-- header --"
+  od -An -tx1 -N16 "$DB" 2>&1 || true
+  printf "%s\n" "-- sqlite objects --"
+  sqlite3 -readonly "$DB" \
+    "SELECT type,name,tbl_name,sql FROM sqlite_master ORDER BY type,name;" \
+    2>&1 || true
+done
+' >"$capture_dir/01-database-schemas.txt" 2>&1
+
+pull_tv_file() {
+  remote_path=$1
+  local_name=$2
+  temporary="$capture_dir/resources/$local_name.partial"
+  destination="$capture_dir/resources/$local_name"
+
+  printf '      %s\n' "$local_name"
+  tv "base64 '$remote_path'" | base64 -d >"$temporary"
+  mv "$temporary" "$destination"
+}
+
+printf '[2/4] Pulling selected Edenview assemblies...\n'
+pull_tv_file \
+  /opt/usr/apps/com.samsung.tv.coba.edenview/shared/res/ResourceEdenView.dll \
+  ResourceEdenView.dll
+pull_tv_file \
+  /opt/usr/apps/com.samsung.tv.coba.edenview/shared/res/TextResourceEdenView.dll \
+  TextResourceEdenView.dll
+pull_tv_file \
+  /opt/usr/apps/com.samsung.tv.coba.edenview/shared/res/en-US/TextResourceEdenView.resources.dll \
+  TextResourceEdenView.resources.en-US.dll
+pull_tv_file \
+  /opt/usr/apps/com.samsung.tv.coba.edenview/shared/res/ViewPluginFullHomeTiles.dll \
+  ViewPluginFullHomeTiles.dll
+pull_tv_file \
+  /opt/usr/apps/com.samsung.tv.coba.edenview/shared/res/ViewPluginPages.dll \
+  ViewPluginPages.dll
+
+printf '[3/4] Searching local assembly strings...\n'
+if command -v strings >/dev/null 2>&1; then
+  {
+    for file in "$capture_dir"/resources/*.dll; do
+      printf '\n=== %s ===\n' "$(basename "$file")"
+      strings -a -n 4 "$file" |
+        grep -Ei \
+          'top.?pick|for.?you|recommend|promotion|preview|content.?tile|full.?home|rank|personal' \
+        || true
+    done
+  } >"$capture_dir/02-resource-string-hits.txt"
+else
+  printf 'Host command "strings" is unavailable.\n' \
+    >"$capture_dir/02-resource-string-hits.txt"
+fi
+
+sha256sum "$capture_dir"/resources/*.dll \
+  >"$capture_dir/03-resource-hashes.txt"
+
+printf '[4/4] Creating archive...\n'
+archive="$capture_dir.tar.gz"
+tar -C "$capture_dir" -czf "$archive" .
+
+if id "$output_owner" >/dev/null 2>&1; then
+  chown -R "$output_owner":"$output_owner" "$capture_dir" "$archive"
+fi
+
+printf '\nCapture complete:\n%s\n' "$archive"
+printf 'Keep the DLLs private; upload the archive here, not to the public repository.\n'
