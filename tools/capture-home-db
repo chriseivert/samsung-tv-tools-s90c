@@ -8,8 +8,34 @@ fi
 
 repo=${SAMSUNG_TV_TOOLS_DIR:-/home/cseivert/samsung-tv-tools}
 tv_host=${TV_HOST:-172.16.40.13}
+callback_host=${TV_CALLBACK_HOST:-172.16.10.5}
+capture_port=${TV_CAPTURE_PORT:-4445}
 output_parent=${S90C_RESEARCH_DIR:-/home/cseivert/s90c-research}
 output_owner=${SUDO_USER:-cseivert}
+
+case "$callback_host" in
+  *[!0-9A-Fa-f:.]*|'')
+    printf 'capture-home-db: invalid TV_CALLBACK_HOST: %s\n' "$callback_host" >&2
+    exit 2
+    ;;
+esac
+case "$capture_port" in
+  *[!0-9]*|'')
+    printf 'capture-home-db: invalid TV_CAPTURE_PORT: %s\n' "$capture_port" >&2
+    exit 2
+    ;;
+esac
+if [ "$capture_port" -lt 1 ] || [ "$capture_port" -gt 65535 ]; then
+  printf 'capture-home-db: TV_CAPTURE_PORT must be between 1 and 65535\n' >&2
+  exit 2
+fi
+
+for command in nix nc python3 tar base64 sha256sum; do
+  if ! command -v "$command" >/dev/null 2>&1; then
+    printf 'capture-home-db: missing host command: %s\n' "$command" >&2
+    exit 2
+  fi
+done
 
 if [ ! -d "$repo" ]; then
   printf 'capture-home-db: repository not found: %s\n' "$repo" >&2
@@ -49,52 +75,69 @@ do
 done
 ' >"$capture_dir/01-database-schemas.txt" 2>&1
 
-pull_tv_file() {
-  remote_path=$1
-  local_name=$2
-  temporary="$capture_dir/resources/$local_name.partial"
-  destination="$capture_dir/resources/$local_name"
+printf '[2/4] Receiving selected Edenview assemblies on %s:%s...\n' \
+  "$callback_host" "$capture_port"
+bundle="$capture_dir/edenview-resources.tar.gz"
+listener_log="$capture_dir/transfer-listener.txt"
+nc -lvnp "$capture_port" >"$bundle" 2>"$listener_log" &
+listener_pid=$!
 
-  printf '      %s\n' "$local_name"
-  tv "base64 '$remote_path'" | base64 -d >"$temporary"
-  mv "$temporary" "$destination"
+cleanup_listener() {
+  kill "$listener_pid" 2>/dev/null || true
 }
+trap cleanup_listener EXIT INT TERM
+sleep 1
 
-printf '[2/4] Pulling selected Edenview assemblies...\n'
-pull_tv_file \
-  /opt/usr/apps/com.samsung.tv.coba.edenview/shared/res/ResourceEdenView.dll \
-  ResourceEdenView.dll
-pull_tv_file \
-  /opt/usr/apps/com.samsung.tv.coba.edenview/shared/res/TextResourceEdenView.dll \
-  TextResourceEdenView.dll
-pull_tv_file \
-  /opt/usr/apps/com.samsung.tv.coba.edenview/shared/res/en-US/TextResourceEdenView.resources.dll \
-  TextResourceEdenView.resources.en-US.dll
-pull_tv_file \
-  /opt/usr/apps/com.samsung.tv.coba.edenview/shared/res/ViewPluginFullHomeTiles.dll \
-  ViewPluginFullHomeTiles.dll
-pull_tv_file \
-  /opt/usr/apps/com.samsung.tv.coba.edenview/shared/res/ViewPluginPages.dll \
-  ViewPluginPages.dll
+remote_command="/usr/bin/bash -c 'exec 5<>/dev/tcp/$callback_host/$capture_port; /bin/tar -czf - -C /opt/usr/apps/com.samsung.tv.coba.edenview/shared/res ResourceEdenView.dll TextResourceEdenView.dll ViewPluginFullHomeTiles.dll ViewPluginPages.dll en-US/TextResourceEdenView.resources.dll >&5 2>/dev/null'"
 
-printf '[3/4] Searching local assembly strings...\n'
-if command -v strings >/dev/null 2>&1; then
-  {
-    for file in "$capture_dir"/resources/*.dll; do
-      printf '\n=== %s ===\n' "$(basename "$file")"
-      strings -a -n 4 "$file" |
-        grep -Ei \
-          'top.?pick|for.?you|recommend|promotion|preview|content.?tile|full.?home|rank|personal' \
-        || true
-    done
-  } >"$capture_dir/02-resource-string-hits.txt"
-else
-  printf 'Host command "strings" is unavailable.\n' \
-    >"$capture_dir/02-resource-string-hits.txt"
+if ! tv "$remote_command"; then
+  printf 'capture-home-db: TV resource transfer command failed\n' >&2
+  exit 1
 fi
 
-sha256sum "$capture_dir"/resources/*.dll \
-  >"$capture_dir/03-resource-hashes.txt"
+wait "$listener_pid"
+trap - EXIT INT TERM
+
+tar -xzf "$bundle" -C "$capture_dir/resources"
+rm -f "$bundle"
+
+printf '[3/4] Extracting ASCII and UTF-16 strings locally...\n'
+python3 - "$capture_dir/resources" "$capture_dir/02-resource-string-hits.txt" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+root = Path(sys.argv[1])
+output = Path(sys.argv[2])
+wanted = re.compile(
+    rb"top.?pick|for.?you|recommend|promotion|preview|content.?tile|"
+    rb"full.?home|rank|personal",
+    re.IGNORECASE,
+)
+ascii_re = re.compile(rb"[\x20-\x7e]{4,}")
+utf16_re = re.compile(rb"(?:[\x20-\x7e]\x00){4,}")
+
+with output.open("w", encoding="utf-8") as stream:
+    for path in sorted(root.rglob("*.dll")):
+        stream.write(f"\n=== {path.relative_to(root)} ===\n")
+        data = path.read_bytes()
+        values = []
+        for match in ascii_re.finditer(data):
+            value = match.group()
+            if wanted.search(value):
+                values.append(value.decode("ascii", "replace"))
+        for match in utf16_re.finditer(data):
+            raw = match.group()
+            compact = raw.replace(b"\x00", b"")
+            if wanted.search(compact):
+                values.append(raw.decode("utf-16le", "replace"))
+        for value in dict.fromkeys(values):
+            stream.write(value + "\n")
+PY
+
+find "$capture_dir/resources" -type f -name '*.dll' -print0 |
+  sort -z |
+  xargs -0 sha256sum >"$capture_dir/03-resource-hashes.txt"
 
 printf '[4/4] Creating archive...\n'
 archive="$capture_dir.tar.gz"
