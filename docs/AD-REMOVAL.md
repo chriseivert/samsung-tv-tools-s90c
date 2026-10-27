@@ -151,9 +151,30 @@ This was a successful package deactivation, not an uninstall. It establishes
 that suppressing `targeted-ad-service` alone does not remove the rail. Reboot
 persistence and other functional side effects remain unverified.
 
+## Ad Player test
+
+The WGT package `adplatform` was tested separately after restoring
+`targeted-ad-service` to `package_disable=false`.
+
+```sh
+pkgcmd -D -t wgt -n adplatform --global
+```
+
+The operation set `package_info.package_disable` to `true`. Its files
+remained installed, and `adplatform.ADPlayer` remained a symbolic link to
+Samsung's signed `/usr/bin/wrt`. No Ad Player process was visible. After
+leaving and reopening Smart Hub, **Top Picks For You remained unchanged**.
+Therefore, disabling `adplatform` alone does not remove the rail.
+
+Reactivate it with:
+
+```sh
+pkgcmd -A -t wgt -n adplatform --global
+```
+
 ## Rollback
 
-Reactivate the package with the supported package-manager operation:
+Reactivate the targeted-ad package with the supported package-manager operation:
 
 ```sh
 tv '
