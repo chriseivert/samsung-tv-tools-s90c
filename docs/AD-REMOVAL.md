@@ -215,6 +215,27 @@ preloaded and removable. This makes it a stronger renderer/view candidate than
 the previously tested advertising packages, but disabling it may affect Smart
 Hub Home and requires a reboot to unload the mapped resource.
 
+## Offline resource and cache findings
+
+Private copies of five Edenview managed assemblies were inspected without being
+published. Their SHA-256 hashes were retained in the private capture. Derived
+findings:
+
+- `ViewPluginFullHomeTiles.dll` references the Vconf key
+  `db/eden/homeRecommendation`, adjacent to the literal `TRUE`.
+- The same component contains explicit For You navigation, Home preview,
+  content-tile, ranking and recommendation-related classes.
+- `ViewPluginPages.dll` labels the associated surface
+  `Recommended Content`.
+- Home Media stores its UI model in `coba.db` and
+  `shared/trusted/sqlite.db`.
+- Content Service Manager stores accelerator, section and tile data in
+  `.preview.db` and `.preview.db.sqlite`.
+
+These strings provide a direct, lower-risk configuration candidate. The key
+must be read and typed before any setter is attempted; its behavior is not yet
+verified on this build.
+
 ## Edenview test — do not disable
 
 `com.samsung.tv.coba.edenview` was disabled with the supported global package
