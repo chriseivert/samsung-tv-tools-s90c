@@ -3,10 +3,12 @@
 Scope: Samsung S90C on Tizen 9 build
 `T-PTMCAKUC-0090-REL-202603190200`.
 
-The goal is to determine whether Samsung's advertising packages feed the Smart
-Hub **Top Picks For You** rail. That rail may be a recommendation surface rather
-than a conventional advertisement. Removing ad packages is therefore not yet a
-confirmed way to remove it.
+The goal was to determine whether Samsung's advertising packages feed the Smart
+Hub **Top Picks For You** rail. Testing showed that the rail is a server-defined
+Home recommendation surface rather than a UI owned solely by the conventional
+advertising packages. Disabling those packages did not remove it. A separate,
+verified cache allowlist is documented in
+[Smart Hub Home cleanup](HOME-CLEANUP.md).
 
 Automated `tv-setup apply` remains unsupported on this build. These commands
 use Tizen's package manager directly and test one component at a time.
@@ -232,9 +234,11 @@ findings:
 - Content Service Manager stores accelerator, section and tile data in
   `.preview.db` and `.preview.db.sqlite`.
 
-These strings provide a direct, lower-risk configuration candidate. The key
-must be read and typed before any setter is attempted; its behavior is not yet
-verified on this build.
+The key was subsequently read as the string value `true`. It was set to the
+string value `false` with Vconf's forced-update option and read back
+successfully, but the Home layout did not change, including after reboot. The
+key was restored to `true`. It is not sufficient to remove the For You rails
+on this build.
 
 ## Edenview test — do not disable
 
@@ -277,6 +281,19 @@ Rollback:
 ```sh
 pkgcmd -A -t app -n com.samsung.tv.content-tiles-provider --global
 ```
+
+## Successful cache-layer result
+
+Further analysis identified two rotating Home Media cache slots,
+`.ContentsBrowserCache.1` and `.ContentsBrowserCache.2`. Removing the special
+Top Picks alias from both slots removed **Top Picks For You**. Allowlisting only
+`22_GROUP_ID_CW` then retained the selected application launcher and
+**Continue Playing** while removing the remaining 27 For You entries.
+
+This successful result does not change the package-test conclusion: the three
+advertising packages were not the source of the rail. See
+[Smart Hub Home cleanup](HOME-CLEANUP.md) for the cache format, exact inventory,
+commands, validation, backup and rollback.
 
 ## Rollback
 
