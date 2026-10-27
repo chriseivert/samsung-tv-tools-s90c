@@ -1,6 +1,6 @@
 # S90C / Tizen 9 manual findings
 
-Owner: chriseivert. Observed October 26, 2026. All observations are restricted to
+Owner: chriseivert. Observed October 26–27, 2026. All observations are restricted to
 `T-PTMCAKUC-0090-REL-202603190200`. No claim of general S90C compatibility.
 No application removals, direct package-database edits, UEP patches, or
 update-service changes were performed in the documented sessions. A targeted-ad
@@ -184,6 +184,51 @@ reboot broke the graphical interface. Reactivating Edenview restored it.
 **Edenview is a critical dependency and must not be disabled or removed.**
 The high-CPU Cobalt process was `com.samsung.tv.cobalt-yt` (YouTube), not
 Home. See [Advertising-package experiment](AD-REMOVAL.md).
+
+## Verified Smart Hub Home cleanup
+
+The recommendation investigation ultimately identified the persistent control
+point. Home Media uses two alternating files:
+
+```text
+/opt/usr/home/owner/apps_rw/com.samsung.tv.home.media/data/.ContentsBrowserCache.1
+/opt/usr/home/owner/apps_rw/com.samsung.tv.home.media/data/.ContentsBrowserCache.2
+```
+
+Each file contains a decimal generation line, one line of UTF-8 JSON, and an
+`EOFCOBA` footer. The outer JSON stores several values as JSON-encoded strings.
+The two relevant keys were:
+
+- `CacheFirstRowPMID=TerraCategory_22_83114`; and
+- `CacheTabCategoryIDList`, whose For You tab (`tab_id=22`) held 28 items
+  after the special Top Picks entry was removed.
+
+The generated runtime entity for Top Picks had UID 598685, component
+`d/dhcategory@TerraCategory_FirstTab_FirstRow`, row ID 83114, and row
+identifier `[foryou][curated]_top_picks_for_you`. Setting its runtime
+`visible` field to zero was ineffective and Home Media reset it to one on
+restart.
+
+Removing `FirstTab_FirstRow` from the persistent tab list and clearing
+`CacheFirstRowPMID` removed **Top Picks For You**. A subsequent allowlist that
+retained only `22_GROUP_ID_CW` removed the other 27 server-defined For You
+entries while preserving the selected Home Screen applications and
+**Continue Playing**. The owner visually verified the result after Home Media
+was terminated and reopened.
+
+The launcher is a separate `d/launcher` runtime component. Continue Playing is
+`d/continuewatchrow`. This separation is why the narrow cache allowlist
+preserved both intended surfaces.
+
+Observed removed rows included Fun Family Frights, New on TV, Sports: Live &
+Upcoming, Genres, two Halloween collections, subscription/rental movie rows,
+free movie/TV rows, Trending, sponsored rows, Vision AI Companion, Media
+Options, and additional server-curated categories.
+
+The exact procedure, full cache inventory, safety checks and rollback are in
+[Smart Hub Home cleanup](HOME-CLEANUP.md). The result is verified after a Home
+Media restart; hard-reboot persistence and long-term Terra refresh behavior
+remain to be tested.
 
 ## Remaining evidence
 
