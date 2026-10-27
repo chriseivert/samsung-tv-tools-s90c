@@ -71,6 +71,33 @@ Changing its Top Picks entity to `visible=0` did not affect the active GUI and
 was reset to `1` after Home Media restarted. It is an output/cache, not the
 correct persistent control point.
 
+## Additional reverse-engineering findings
+
+- `com.samsung.tv.coba.dhcategory` is a logical Home component on this build,
+  not a separately installed package. Its implementation is
+  `/opt/usr/apps/com.samsung.tv.coba.newhome/shared/res/CompDHCategory.dll`.
+- Terra implementation files were found at
+  `/opt/usr/apps/com.samsung.tv.ContentsBrowser/shared/res/CompTerra.dll` and
+  `ViewPluginTerra.dll`.
+- CoBA API assemblies were found under
+  `/usr/share/dotnet.tizen/tvappapi/`.
+- `ServerAPI.HomeRestReceive` passes the Terra response into
+  `ViewModel.ParseHomeData`; the exact editorial row identifiers are supplied
+  by the server rather than hard-coded in the client.
+- `com.samsung.tv.coba.adagent` contains immersive top-banner and sponsored
+  label logic. That is distinct from the curated
+  `[foryou][curated]_top_picks_for_you` category.
+- No exact Top Picks source row was returned from Home Media's `coba.db`.
+  The matching entities appeared in `shared/trusted/sqlite.db`, and direct
+  visibility changes there were regenerated.
+- `db/eden/category/list` contained the top-level Life Plus, Game and Media
+  category IDs. It was not changed because it controls broader Home navigation,
+  not just recommendation rows.
+- The cache contained derived metadata such as `CacheUpdateToken`,
+  `CacheFirstRowPMID`, `CacheTabCategoryIDList`, Continue Watching data,
+  provider preferences, and polling values. The successful cleanup changed only
+  the first-row pointer and tab-22 item list.
+
 ## Rotating cache format
 
 The controlling files are:
