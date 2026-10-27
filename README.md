@@ -38,7 +38,7 @@ unmodified upstream controller test.
 | Volume / display / events / HDMI policies | Not yet functionally tested |
 | HDMI analysis capture / overlays | Not yet tested; distinct from compositor screenshots |
 | LCD local-dimming controls | Not applicable to S90C OLED as backlight-zone control |
-| Ad-package suppression | Three known ad packages disabled across hard reboot; rail unchanged; retained disabled by owner |
+| Ad-package suppression | Three ad packages remain disabled; rail unchanged. Content Tiles ineffective. Edenview is critical—do not disable |
 
 See [manual evidence](docs/FINDINGS.md) for exact observations and limitations.
 The [persistent reverse-shell guide](docs/ROOT-SHELL.md) records the detached
