@@ -99,9 +99,9 @@ deactivation operations:
 -A, --activate      enable package or app or apps or splash-screen
 ```
 
-The deactivation test below is **prepared but not yet recorded as executed**.
-It first makes a consistent SQLite backup on the TV. The backup contains package
-metadata and should be treated as private.
+The deactivation test below was executed on October 27, 2026. It first made a
+consistent SQLite backup on the TV. The backup contains package metadata and
+should be treated as private.
 
 ```sh
 tv '
@@ -135,10 +135,21 @@ ps -ef | grep "[t]argeted-ad-service" || true
 '
 ```
 
-After a successful deactivation, leave Smart Hub, wait, and reopen it before
-judging the visible result. Cached recommendations may remain. Record whether
-the rail disappears, becomes generic, remains unchanged, or returns after
-reboot.
+### Observed result
+
+`pkgcmd` completed with `key[end] val[ok]`. Eight seconds later:
+
+- no targeted-ad process was present;
+- `app_launcher` reported the application unavailable to UID 0;
+- the package directory and executable remained present;
+- `package_app_info.app_disable` remained `false`;
+- `package_info.package_disable` changed to `true`;
+- no per-user override row was returned; and
+- after leaving and reopening Smart Hub, **Top Picks For You remained visible**.
+
+This was a successful package deactivation, not an uninstall. It establishes
+that suppressing `targeted-ad-service` alone does not remove the rail. Reboot
+persistence and other functional side effects remain unverified.
 
 ## Rollback
 
